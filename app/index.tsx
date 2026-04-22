@@ -1,0 +1,470 @@
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { t, Lang } from "../constants/i18n";
+
+type Step = "home" | "result";
+
+type Task = {
+  id: string;
+  name: string;
+  duration: number;
+};
+
+type TimelineItem = {
+  id: string;
+  name: string;
+  time: string;
+  isArrival?: boolean;
+};
+
+function minsToDisplay(totalMins: number) {
+  const h = Math.floor(totalMins / 60) % 24;
+  const m = totalMins % 60;
+  const isPM = h >= 12;
+  const hour12 = h % 12 || 12;
+  return `${String(hour12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${isPM ? "PM" : "AM"}`;
+}
+
+function calculateTimeline(arrivalMins: number, tasks: Task[]): TimelineItem[] {
+  const timeline: TimelineItem[] = [
+    { id: "arrival", name: "arrive", time: minsToDisplay(arrivalMins), isArrival: true },
+  ];
+  let cursor = arrivalMins;
+  for (const task of [...tasks].reverse()) {
+    cursor -= task.duration;
+    timeline.push({ id: task.id, name: task.name, time: minsToDisplay(cursor) });
+  }
+  return timeline.reverse();
+}
+
+function SortableTask({
+  task,
+  onRemove,
+}: {
+  task: Task;
+  onRemove: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: task.id });
+
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }}>
+      <View style={styles.taskRow}>
+        <View style={styles.dragHandle} {...(attributes as any)} {...(listeners as any)}>
+          <Text style={styles.dragIcon}>⠿</Text>
+        </View>
+        <View style={styles.taskInfo}>
+          <Text style={styles.taskName}>{task.name}</Text>
+          <Text style={styles.taskDuration}>{task.duration} min</Text>
+        </View>
+        <TouchableOpacity onPress={() => onRemove(task.id)}>
+          <Text style={styles.removeBtn}>✕</Text>
+        </TouchableOpacity>
+      </View>
+    </div>
+  );
+}
+
+export default function App() {
+  const [lang, setLang] = useState<Lang>("en");
+  const [step, setStep] = useState<Step>("home");
+  const [arrivalMins, setArrivalMins] = useState(12 * 60);
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: "1", name: "Shower + get ready", duration: 60 },
+    { id: "2", name: "Eat + dishes", duration: 60 },
+    { id: "3", name: "Travel", duration: 60 },
+  ]);
+  const [newTaskName, setNewTaskName] = useState("");
+  const [newTaskDuration, setNewTaskDuration] = useState("");
+
+  const sensors = useSensors(useSensor(PointerSensor));
+  const T = t[lang];
+
+  const addTask = () => {
+    if (!newTaskName || !newTaskDuration) return;
+    setTasks([
+      ...tasks,
+      { id: Date.now().toString(), name: newTaskName, duration: parseInt(newTaskDuration) },
+    ]);
+    setNewTaskName("");
+    setNewTaskDuration("");
+  };
+
+  const removeTask = (id: string) => setTasks(tasks.filter((task) => task.id !== id));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setTasks((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const totalMinutes = tasks.reduce((sum, task) => sum + task.duration, 0);
+  const timeline = calculateTimeline(arrivalMins, tasks);
+
+  // ── Screen 1: 시간 설정 + 할 일 목록 ────────────────────────────────────
+
+  if (step === "home") {
+    return (
+      <View style={styles.outer}>
+        <ScrollView
+          style={{ width: "100%" }}
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          <TouchableOpacity
+            style={styles.langBtn}
+            onPress={() => setLang(lang === "en" ? "ko" : "en")}
+          >
+            <Text style={styles.langBtnText}>
+              {lang === "en" ? "한" : "EN"} ⇄ {lang === "en" ? "EN" : "한"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* 시간 섹션 */}
+          <Text style={styles.title}>{T.title}</Text>
+          <Text style={styles.subtitle}>{T.subtitle}</Text>
+          <View style={styles.timeBox}>
+            <input
+              type="time"
+              defaultValue="12:00"
+              onChange={(e) => {
+                const [h, m] = e.target.value.split(":").map(Number);
+                setArrivalMins(h * 60 + m);
+              }}
+              style={{
+                fontSize: 48,
+                fontWeight: "500",
+                border: "none",
+                background: "transparent",
+                outline: "none",
+                textAlign: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            />
+          </View>
+
+          {/* 할 일 섹션 */}
+          <Text style={styles.sectionTitle}>{T.yourTasks}</Text>
+          <Text style={[styles.subtitle, { marginBottom: 16 }]}>
+            {T.arriveBy} {minsToDisplay(arrivalMins)}
+          </Text>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={tasks.map((task) => task.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div style={{ width: "100%" }}>
+                {tasks.map((task) => (
+                  <SortableTask key={task.id} task={task} onRemove={removeTask} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>{T.total}</Text>
+            <Text style={styles.totalValue}>{totalMinutes} min</Text>
+          </View>
+
+          <View style={styles.addRow}>
+            <TextInput
+              style={[styles.input, { flex: 2 }]}
+              placeholder={T.taskName}
+              value={newTaskName}
+              onChangeText={setNewTaskName}
+              returnKeyType="next"
+            />
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder={T.min}
+              value={newTaskDuration}
+              onChangeText={setNewTaskDuration}
+              keyboardType="numeric"
+              returnKeyType="done"
+              onSubmitEditing={addTask}
+            />
+            <TouchableOpacity style={styles.addBtn} onPress={addTask}>
+              <Text style={styles.addBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.calcBtn} onPress={() => setStep("result")}>
+            <Text style={styles.calcBtnText}>{T.calculate}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ── Screen 2: 결과 타임라인 ───────────────────────────────────────────────
+
+  return (
+    <View style={styles.outer}>
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.langBtn}
+          onPress={() => setLang(lang === "en" ? "ko" : "en")}
+        >
+          <Text style={styles.langBtnText}>
+            {lang === "en" ? "한" : "EN"} ⇄ {lang === "en" ? "EN" : "한"}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={styles.title}>{T.yourSchedule}</Text>
+        <Text style={[styles.subtitle, { marginBottom: 32 }]}>
+          {T.wakeUpBy} {timeline[0].time}
+        </Text>
+
+        <ScrollView style={{ width: "100%", marginBottom: 24 }}>
+          {timeline.map((item, index) => (
+            <View key={item.id} style={styles.timelineRow}>
+              <View style={styles.dotCol}>
+                <View style={[styles.dot, item.isArrival && styles.dotArrival]} />
+                {index < timeline.length - 1 && <View style={styles.line} />}
+              </View>
+              <View style={styles.timelineContent}>
+                <Text style={[styles.timelineTime, item.isArrival && styles.timelineTimeArrival]}>
+                  {item.time}
+                </Text>
+                <Text style={styles.timelineName}>
+                  {item.isArrival ? T.arrive : item.name}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+
+        <TouchableOpacity style={styles.calcBtn}>
+          <Text style={styles.calcBtnText}>{T.setAllAlarms}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.backBtn} onPress={() => setStep("home")}>
+          <Text style={styles.backBtnText}>{T.editTasks}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  outer: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  container: {
+    padding: 24,
+    paddingTop: 60,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
+  },
+  langBtn: {
+    position: "absolute",
+    top: 16,
+    right: 0,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  langBtnText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#333",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "500",
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#888",
+    marginBottom: 24,
+  },
+  timeBox: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    marginBottom: 36,
+    width: "100%",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  taskRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  dragHandle: {
+    paddingRight: 12,
+    cursor: "grab" as any,
+  },
+  dragIcon: {
+    fontSize: 16,
+    color: "#aaa",
+  },
+  taskInfo: {
+    flex: 1,
+  },
+  taskName: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  taskDuration: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
+  },
+  removeBtn: {
+    fontSize: 14,
+    color: "#aaa",
+    paddingLeft: 12,
+  },
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  totalLabel: {
+    fontSize: 13,
+    color: "#888",
+  },
+  totalValue: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#000",
+  },
+  addRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20,
+    width: "100%",
+  },
+  input: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+  },
+  addBtn: {
+    backgroundColor: "#000",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addBtnText: {
+    color: "#fff",
+    fontSize: 20,
+  },
+  calcBtn: {
+    backgroundColor: "#000",
+    borderRadius: 12,
+    padding: 16,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  calcBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  timelineRow: {
+    flexDirection: "row",
+    marginBottom: 0,
+  },
+  dotCol: {
+    alignItems: "center",
+    width: 24,
+    marginRight: 16,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#000",
+    marginTop: 4,
+  },
+  dotArrival: {
+    backgroundColor: "#4A90E2",
+  },
+  line: {
+    width: 1,
+    flex: 1,
+    backgroundColor: "#e0e0e0",
+    marginVertical: 4,
+    minHeight: 32,
+  },
+  timelineContent: {
+    paddingBottom: 24,
+    flex: 1,
+  },
+  timelineTime: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#000",
+  },
+  timelineTimeArrival: {
+    color: "#4A90E2",
+  },
+  timelineName: {
+    fontSize: 13,
+    color: "#888",
+    marginTop: 2,
+  },
+  backBtn: {
+    padding: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  backBtnText: {
+    color: "#888",
+    fontSize: 14,
+  },
+});

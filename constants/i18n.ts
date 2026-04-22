@@ -1,0 +1,38 @@
+export type Lang = "en" | "ko";
+
+export const t = {
+  en: {
+    title: "ReadyBy",
+    subtitle: "When do you need to arrive?",
+    next: "Next →",
+    yourTasks: "Your tasks",
+    arriveBy: "Arrive by",
+    taskName: "Task name",
+    min: "Min",
+    total: "Total",
+    calculate: "Calculate →",
+    yourSchedule: "Your schedule",
+    wakeUpBy: "Wake up by",
+    arrive: "Arrive!",
+    setAllAlarms: "Set all alarms",
+    editTasks: "← Edit tasks",
+    langToggle: "한국어",
+  },
+  ko: {
+    title: "ReadyBy",
+    subtitle: "몇 시까지 도착해야 하나요?",
+    next: "다음 →",
+    yourTasks: "할 일 목록",
+    arriveBy: "도착 시간",
+    taskName: "할 일 이름",
+    min: "분",
+    total: "총",
+    calculate: "계산하기 →",
+    yourSchedule: "내 스케줄",
+    wakeUpBy: "기상 시간",
+    arrive: "도착!",
+    setAllAlarms: "알람 전체 설정",
+    editTasks: "← 할 일 수정",
+    langToggle: "English",
+  },
+};

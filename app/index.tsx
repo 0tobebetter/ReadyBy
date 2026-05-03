@@ -25,6 +25,33 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { t, Lang } from "../constants/i18n";
 
+const baseInput = {
+  backgroundColor: "#f5f5f5",
+  borderRadius: 10,
+  padding: 12,
+  fontSize: 14,
+  border: "none",
+  outline: "none",
+  fontFamily: "inherit",
+  minWidth: 0,
+} as React.CSSProperties;
+const inputStyle = { ...baseInput, flex: 2 } as React.CSSProperties;
+const minInputStyle = { ...baseInput, flex: 1 } as React.CSSProperties;
+const addBtnStyle = {
+  backgroundColor: "#000",
+  color: "#fff",
+  borderRadius: 10,
+  width: 48,
+  height: 48,
+  fontSize: 24,
+  border: "none",
+  cursor: "pointer",
+  flexShrink: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+} as React.CSSProperties;
+
 type Step = "home" | "result";
 
 type Task = {
@@ -353,26 +380,22 @@ export default function App() {
               </View>
 
               <Text style={styles.addTaskLabel}>{T.addTask}</Text>
-              <div style={{ display: "flex", flexDirection: "row", gap: 8, marginBottom: 20, width: "100%" }}>
-                <TextInput
-                  style={[styles.input, { flex: 2 }]}
+              <div style={{ display: "flex", gap: "8px", marginBottom: 20 }}>
+                <input
+                  style={inputStyle}
                   placeholder={T.taskName}
                   value={newTaskName}
-                  onChangeText={setNewTaskName}
-                  returnKeyType="next"
+                  onChange={(e: any) => setNewTaskName(e.target.value)}
                 />
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                <input
+                  style={minInputStyle}
+                  inputMode="numeric"
                   placeholder={T.min}
                   value={newTaskDuration}
-                  onChangeText={setNewTaskDuration}
-                  keyboardType="numeric"
-                  returnKeyType="done"
-                  onSubmitEditing={addTask}
+                  onChange={(e: any) => setNewTaskDuration(e.target.value)}
+                  onKeyDown={(e: any) => e.key === "Enter" && addTask()}
                 />
-                <TouchableOpacity style={styles.addBtn} onPress={addTask}>
-                  <Text style={styles.addBtnText}>+</Text>
-                </TouchableOpacity>
+                <button onClick={addTask} style={addBtnStyle}>+</button>
               </div>
 
               <TouchableOpacity style={styles.calcBtn} onPress={() => setStep("result")}>

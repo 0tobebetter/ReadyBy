@@ -354,22 +354,24 @@ export default function App() {
 
               <Text style={styles.addTaskLabel}>{T.addTask}</Text>
               <View style={styles.addRow}>
-                <TextInput
-                  style={[styles.input, { flex: 2, marginRight: 8 }]}
-                  placeholder={T.taskName}
-                  value={newTaskName}
-                  onChangeText={setNewTaskName}
-                  returnKeyType="next"
-                />
-                <TextInput
-                  style={[styles.input, { flex: 1, marginRight: 8 }]}
-                  placeholder={T.min}
-                  value={newTaskDuration}
-                  onChangeText={setNewTaskDuration}
-                  keyboardType="numeric"
-                  returnKeyType="done"
-                  onSubmitEditing={addTask}
-                />
+                <View style={styles.addInputs}>
+                  <TextInput
+                    style={[styles.input, { flex: 2, marginRight: 8 }]}
+                    placeholder={T.taskName}
+                    value={newTaskName}
+                    onChangeText={setNewTaskName}
+                    returnKeyType="next"
+                  />
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder={T.min}
+                    value={newTaskDuration}
+                    onChangeText={setNewTaskDuration}
+                    keyboardType="numeric"
+                    returnKeyType="done"
+                    onSubmitEditing={addTask}
+                  />
+                </View>
                 <TouchableOpacity style={styles.addBtn} onPress={addTask}>
                   <Text style={styles.addBtnText}>+</Text>
                 </TouchableOpacity>
@@ -626,6 +628,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     width: "100%",
+  },
+  addInputs: {
+    flex: 1,
+    flexDirection: "row",
+    marginRight: 8,
   },
   input: {
     backgroundColor: "#f5f5f5",

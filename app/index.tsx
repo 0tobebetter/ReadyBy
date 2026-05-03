@@ -353,16 +353,16 @@ export default function App() {
               </View>
 
               <Text style={styles.addTaskLabel}>{T.addTask}</Text>
-              <View style={styles.addRow}>
+              <div style={{ display: "flex", flexDirection: "row", gap: 8, marginBottom: 20, width: "100%" }}>
                 <TextInput
-                  style={[styles.input, { flex: 2, marginRight: 8 }]}
+                  style={[styles.input, { flex: 2 }]}
                   placeholder={T.taskName}
                   value={newTaskName}
                   onChangeText={setNewTaskName}
                   returnKeyType="next"
                 />
                 <TextInput
-                  style={[styles.input, { flex: 1, marginRight: 8 }]}
+                  style={[styles.input, { flex: 1 }]}
                   placeholder={T.min}
                   value={newTaskDuration}
                   onChangeText={setNewTaskDuration}
@@ -373,7 +373,7 @@ export default function App() {
                 <TouchableOpacity style={styles.addBtn} onPress={addTask}>
                   <Text style={styles.addBtnText}>+</Text>
                 </TouchableOpacity>
-              </View>
+              </div>
 
               <TouchableOpacity style={styles.calcBtn} onPress={() => setStep("result")}>
                 <Text style={styles.calcBtnText}>{T.calculate}</Text>
@@ -620,12 +620,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#888",
     marginBottom: 8,
-  },
-  addRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    width: "100%",
   },
   input: {
     backgroundColor: "#f5f5f5",

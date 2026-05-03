@@ -21,6 +21,16 @@ export const t = {
     done: "Done",
     deleteAll: "Delete all",
     addTask: "Add task",
+    copyright: "© 2026 Overseas Living, Right for Me?",
+    privacyPolicy: "Privacy Policy",
+    consentText1: "This site uses ",
+    consentBold: "Google Analytics 4 (GA4)",
+    consentText2:
+      " to collect visit statistics. Browser info, country, and visit duration may be collected anonymously via cookies. Your answers are not stored on our servers. See our ",
+    consentLink: "Privacy Policy",
+    consentText3: " for details.",
+    consentAgree: "Agree and Continue",
+    consentDecline: "Decline",
   },
   ko: {
     title: "ReadyBy",
@@ -42,5 +52,15 @@ export const t = {
     done: "완료",
     deleteAll: "일괄 삭제",
     addTask: "할 일 추가",
+    copyright: "© 2026 해외살이, 나한테 맞을까?",
+    privacyPolicy: "개인정보처리방침",
+    consentText1: "이 사이트는 방문 통계 수집을 위해 ",
+    consentBold: "Google Analytics 4(GA4)",
+    consentText2:
+      "를 사용합니다. 쿠키를 통해 브라우저 정보, 국가, 체류 시간 등이 익명으로 수집될 수 있습니다. 테스트 답변은 서버에 저장되지 않습니다. 자세한 내용은 ",
+    consentLink: "개인정보처리방침",
+    consentText3: "을 확인해 주세요.",
+    consentAgree: "동의하고 계속하기",
+    consentDecline: "동의 안 함",
   },
 };

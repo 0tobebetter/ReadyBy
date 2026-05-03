@@ -1,4 +1,5 @@
 import {
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -6,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -23,6 +24,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { t, Lang } from "../constants/i18n";
+
+// TODO: 개인정보처리방침 페이지 URL로 교체
+const PRIVACY_POLICY_URL = "https://ready-by.vercel.app/privacy";
 
 type Step = "home" | "result";
 
@@ -125,6 +129,52 @@ function SortableTask({
   );
 }
 
+function Footer({ T }: { T: (typeof t)["en"] }) {
+  return (
+    <View style={styles.footer}>
+      <Text style={styles.footerText}>{T.copyright}</Text>
+      <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+        <Text style={styles.footerLink}>{T.privacyPolicy}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function ConsentBanner({
+  T,
+  onAgree,
+  onDecline,
+}: {
+  T: (typeof t)["en"];
+  onAgree: () => void;
+  onDecline: () => void;
+}) {
+  return (
+    <View style={styles.consentBanner}>
+      <Text style={styles.consentText}>
+        {T.consentText1}
+        <Text style={styles.consentBold}>{T.consentBold}</Text>
+        {T.consentText2}
+        <Text
+          style={styles.consentTextLink}
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+        >
+          {T.consentLink}
+        </Text>
+        {T.consentText3}
+      </Text>
+      <View style={styles.consentBtnRow}>
+        <TouchableOpacity style={styles.consentAgreeBtn} onPress={onAgree}>
+          <Text style={styles.consentAgreeBtnText}>{T.consentAgree}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.consentDeclineBtn} onPress={onDecline}>
+          <Text style={styles.consentDeclineBtnText}>{T.consentDecline}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 export default function App() {
   const [lang, setLang] = useState<Lang>("en");
   const [step, setStep] = useState<Step>("home");
@@ -137,6 +187,21 @@ export default function App() {
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskDuration, setNewTaskDuration] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("ga_consent");
+      if (!stored) setShowConsent(true);
+    }
+  }, []);
+
+  const handleConsent = (granted: boolean) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ga_consent", granted ? "granted" : "denied");
+    }
+    setShowConsent(false);
+  };
 
   const sensors = useSensors(useSensor(PointerSensor));
   const T = t[lang];
@@ -282,14 +347,14 @@ export default function App() {
               <Text style={styles.addTaskLabel}>{T.addTask}</Text>
               <View style={styles.addRow}>
                 <TextInput
-                  style={[styles.input, { flex: 2 }]}
+                  style={[styles.input, { flex: 2, marginRight: 8 }]}
                   placeholder={T.taskName}
                   value={newTaskName}
                   onChangeText={setNewTaskName}
                   returnKeyType="next"
                 />
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, { flex: 1, marginRight: 8 }]}
                   placeholder={T.min}
                   value={newTaskDuration}
                   onChangeText={setNewTaskDuration}
@@ -307,7 +372,17 @@ export default function App() {
               </TouchableOpacity>
             </>
           )}
+
+          <Footer T={T} />
         </ScrollView>
+
+        {showConsent && (
+          <ConsentBanner
+            T={T}
+            onAgree={() => handleConsent(true)}
+            onDecline={() => handleConsent(false)}
+          />
+        )}
       </View>
     );
   }
@@ -360,7 +435,17 @@ export default function App() {
         <TouchableOpacity style={styles.backBtn} onPress={() => setStep("home")}>
           <Text style={styles.backBtnText}>{T.editTasks}</Text>
         </TouchableOpacity>
+
+        <Footer T={T} />
       </View>
+
+      {showConsent && (
+        <ConsentBanner
+          T={T}
+          onAgree={() => handleConsent(true)}
+          onDecline={() => handleConsent(false)}
+        />
+      )}
     </View>
   );
 }
@@ -530,7 +615,7 @@ const styles = StyleSheet.create({
   },
   addRow: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "center",
     marginBottom: 20,
     width: "100%",
   },
@@ -545,6 +630,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: 48,
     height: 48,
+    flexShrink: 0,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -565,6 +651,71 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "500",
+  },
+  footer: {
+    alignItems: "center",
+    paddingVertical: 32,
+    gap: 6,
+  },
+  footerText: {
+    fontSize: 12,
+    color: "#aaa",
+  },
+  footerLink: {
+    fontSize: 12,
+    color: "#4A90E2",
+    textDecorationLine: "underline",
+  },
+  consentBanner: {
+    position: "absolute" as any,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#1e1b4b",
+    padding: 24,
+    paddingBottom: 32,
+  },
+  consentText: {
+    fontSize: 14,
+    color: "#e0e0e0",
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  consentBold: {
+    fontWeight: "700",
+    color: "#fff",
+  },
+  consentTextLink: {
+    color: "#818cf8",
+    textDecorationLine: "underline",
+  },
+  consentBtnRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  consentAgreeBtn: {
+    flex: 1,
+    backgroundColor: "#4f46e5",
+    borderRadius: 10,
+    padding: 14,
+    alignItems: "center",
+  },
+  consentAgreeBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  consentDeclineBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#6b7280",
+    borderRadius: 10,
+    padding: 14,
+    alignItems: "center",
+  },
+  consentDeclineBtnText: {
+    color: "#d1d5db",
+    fontSize: 14,
   },
   timelineRow: {
     flexDirection: "row",

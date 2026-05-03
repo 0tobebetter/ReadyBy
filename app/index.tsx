@@ -25,14 +25,18 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { t, Lang } from "../constants/i18n";
 
+const SYS_FONT =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
 const baseInput = {
   backgroundColor: "#f5f5f5",
   borderRadius: 10,
   padding: 12,
-  fontSize: 14,
+  // 16px prevents iOS/Android auto-zoom on focus
+  fontSize: 16,
   border: "none",
   outline: "none",
-  fontFamily: "inherit",
+  fontFamily: SYS_FONT,
   minWidth: 0,
 } as React.CSSProperties;
 const inputStyle = { ...baseInput, flex: 2 } as React.CSSProperties;
@@ -44,6 +48,7 @@ const addBtnStyle = {
   width: 48,
   height: 48,
   fontSize: 24,
+  fontFamily: SYS_FONT,
   border: "none",
   cursor: "pointer",
   flexShrink: 0,
@@ -311,6 +316,7 @@ export default function App() {
               style={{
                 fontSize: 48,
                 fontWeight: "500",
+                fontFamily: SYS_FONT,
                 border: "none",
                 background: "transparent",
                 outline: "none",

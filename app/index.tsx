@@ -327,13 +327,31 @@ export default function App() {
             />
           </View>
 
-          <View style={styles.tasksSectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>{T.yourTasks}</Text>
-              <Text style={styles.subtitle}>
-                {T.arriveBy} {minsToDisplay(arrivalMins)}
-              </Text>
-            </View>
+          <Text style={styles.sectionTitle}>{T.yourTasks}</Text>
+
+          <Text style={styles.addTaskLabel}>{T.addTask}</Text>
+          <div style={{ display: "flex", gap: "8px", marginBottom: 20 }}>
+            <input
+              style={inputStyle}
+              placeholder={T.taskName}
+              value={newTaskName}
+              onChange={(e: any) => setNewTaskName(e.target.value)}
+            />
+            <input
+              style={minInputStyle}
+              inputMode="numeric"
+              placeholder={T.min}
+              value={newTaskDuration}
+              onChange={(e: any) => setNewTaskDuration(e.target.value)}
+              onKeyDown={(e: any) => e.key === "Enter" && addTask()}
+            />
+            <button onClick={addTask} style={addBtnStyle}>+</button>
+          </div>
+
+          <View style={styles.arriveEditRow}>
+            <Text style={styles.subtitle}>
+              {T.arriveBy} {minsToDisplay(arrivalMins)}
+            </Text>
             <TouchableOpacity
               style={styles.editModeBtn}
               onPress={() => setIsEditMode(!isEditMode)}
@@ -379,36 +397,15 @@ export default function App() {
               <Text style={styles.deleteAllBtnText}>{T.deleteAll}</Text>
             </TouchableOpacity>
           ) : (
-            <>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>{T.total}</Text>
-                <Text style={styles.totalValue}>{totalMinutes} min</Text>
-              </View>
-
-              <Text style={styles.addTaskLabel}>{T.addTask}</Text>
-              <div style={{ display: "flex", gap: "8px", marginBottom: 20 }}>
-                <input
-                  style={inputStyle}
-                  placeholder={T.taskName}
-                  value={newTaskName}
-                  onChange={(e: any) => setNewTaskName(e.target.value)}
-                />
-                <input
-                  style={minInputStyle}
-                  inputMode="numeric"
-                  placeholder={T.min}
-                  value={newTaskDuration}
-                  onChange={(e: any) => setNewTaskDuration(e.target.value)}
-                  onKeyDown={(e: any) => e.key === "Enter" && addTask()}
-                />
-                <button onClick={addTask} style={addBtnStyle}>+</button>
-              </div>
-
-              <TouchableOpacity style={styles.calcBtn} onPress={() => setStep("result")}>
-                <Text style={styles.calcBtnText}>{T.calculate}</Text>
-              </TouchableOpacity>
-            </>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>{T.total}</Text>
+              <Text style={styles.totalValue}>{totalMinutes} min</Text>
+            </View>
           )}
+
+          <TouchableOpacity style={styles.calcBtn} onPress={() => setStep("result")}>
+            <Text style={styles.calcBtnText}>{T.calculate}</Text>
+          </TouchableOpacity>
 
           <Footer T={T} />
         </ScrollView>
@@ -542,10 +539,16 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 16,
   },
+  arriveEditRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "500",
-    marginBottom: 4,
+    marginBottom: 12,
   },
   editModeBtn: {
     backgroundColor: "#f0f0f0",

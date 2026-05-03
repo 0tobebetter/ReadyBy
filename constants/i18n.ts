@@ -17,6 +17,10 @@ export const t = {
     setAllAlarms: "Set all alarms",
     editTasks: "← Edit tasks",
     langToggle: "한국어",
+    edit: "Edit",
+    done: "Done",
+    deleteAll: "Delete all",
+    addTask: "Add task",
   },
   ko: {
     title: "ReadyBy",
@@ -34,5 +38,9 @@ export const t = {
     setAllAlarms: "알람 전체 설정",
     editTasks: "← 할 일 수정",
     langToggle: "English",
+    edit: "수정",
+    done: "완료",
+    deleteAll: "일괄 삭제",
+    addTask: "할 일 추가",
   },
 };

@@ -47,6 +47,12 @@ function minsToDisplay(totalMins: number) {
   return `${String(hour12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${isPM ? "PM" : "AM"}`;
 }
 
+function minsToTimeValue(totalMins: number) {
+  const h = Math.floor(totalMins / 60) % 24;
+  const m = totalMins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 function calculateTimeline(arrivalMins: number, tasks: Task[]): TimelineItem[] {
   const timeline: TimelineItem[] = [
     { id: "arrival", name: "arrive", time: minsToDisplay(arrivalMins), isArrival: true },
@@ -62,12 +68,44 @@ function calculateTimeline(arrivalMins: number, tasks: Task[]): TimelineItem[] {
 function SortableTask({
   task,
   onRemove,
+  editMode,
+  onUpdateName,
+  onUpdateDuration,
 }: {
   task: Task;
   onRemove: (id: string) => void;
+  editMode?: boolean;
+  onUpdateName?: (id: string, name: string) => void;
+  onUpdateDuration?: (id: string, duration: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: task.id });
+
+  if (editMode) {
+    return (
+      <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }}>
+        <View style={styles.taskRow}>
+          <View style={styles.dragHandle} {...(attributes as any)} {...(listeners as any)}>
+            <Text style={styles.dragIcon}>⠿</Text>
+          </View>
+          <TextInput
+            style={[styles.editInput, { flex: 2 }]}
+            value={task.name}
+            onChangeText={(text) => onUpdateName?.(task.id, text)}
+          />
+          <TextInput
+            style={[styles.editInput, { width: 56, marginLeft: 8 }]}
+            value={String(task.duration)}
+            onChangeText={(text) => onUpdateDuration?.(task.id, text)}
+            keyboardType="numeric"
+          />
+          <TouchableOpacity style={styles.editRemoveBtn} onPress={() => onRemove(task.id)}>
+            <Text style={styles.editRemoveBtnText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      </div>
+    );
+  }
 
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }}>
@@ -98,6 +136,7 @@ export default function App() {
   ]);
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskDuration, setNewTaskDuration] = useState("");
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor));
   const T = t[lang];
@@ -113,6 +152,15 @@ export default function App() {
   };
 
   const removeTask = (id: string) => setTasks(tasks.filter((task) => task.id !== id));
+
+  const updateTaskName = (id: string, name: string) => {
+    setTasks(tasks.map((task) => (task.id === id ? { ...task, name } : task)));
+  };
+
+  const updateTaskDuration = (id: string, durStr: string) => {
+    const duration = parseInt(durStr) || 0;
+    setTasks(tasks.map((task) => (task.id === id ? { ...task, duration } : task)));
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -138,22 +186,24 @@ export default function App() {
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
         >
-          <TouchableOpacity
-            style={styles.langBtn}
-            onPress={() => setLang(lang === "en" ? "ko" : "en")}
-          >
-            <Text style={styles.langBtnText}>
-              {lang === "en" ? "한" : "EN"} ⇄ {lang === "en" ? "EN" : "한"}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity
+              style={styles.langBtn}
+              onPress={() => setLang(lang === "en" ? "ko" : "en")}
+            >
+              <Text style={styles.langBtnText}>
+                {lang === "en" ? "한" : "EN"} ⇄ {lang === "en" ? "EN" : "한"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          {/* 시간 섹션 */}
           <Text style={styles.title}>{T.title}</Text>
           <Text style={styles.subtitle}>{T.subtitle}</Text>
           <View style={styles.timeBox}>
             <input
               type="time"
-              defaultValue="12:00"
+              value={minsToTimeValue(arrivalMins)}
               onChange={(e) => {
                 const [h, m] = e.target.value.split(":").map(Number);
                 setArrivalMins(h * 60 + m);
@@ -171,11 +221,22 @@ export default function App() {
             />
           </View>
 
-          {/* 할 일 섹션 */}
-          <Text style={styles.sectionTitle}>{T.yourTasks}</Text>
-          <Text style={[styles.subtitle, { marginBottom: 16 }]}>
-            {T.arriveBy} {minsToDisplay(arrivalMins)}
-          </Text>
+          <View style={styles.tasksSectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>{T.yourTasks}</Text>
+              <Text style={styles.subtitle}>
+                {T.arriveBy} {minsToDisplay(arrivalMins)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.editModeBtn}
+              onPress={() => setIsEditMode(!isEditMode)}
+            >
+              <Text style={styles.editModeBtnText}>
+                {isEditMode ? T.done : T.edit}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <DndContext
             sensors={sensors}
@@ -188,42 +249,64 @@ export default function App() {
             >
               <div style={{ width: "100%" }}>
                 {tasks.map((task) => (
-                  <SortableTask key={task.id} task={task} onRemove={removeTask} />
+                  <SortableTask
+                    key={task.id}
+                    task={task}
+                    onRemove={removeTask}
+                    editMode={isEditMode}
+                    onUpdateName={updateTaskName}
+                    onUpdateDuration={updateTaskDuration}
+                  />
                 ))}
               </div>
             </SortableContext>
           </DndContext>
 
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>{T.total}</Text>
-            <Text style={styles.totalValue}>{totalMinutes} min</Text>
-          </View>
-
-          <View style={styles.addRow}>
-            <TextInput
-              style={[styles.input, { flex: 2 }]}
-              placeholder={T.taskName}
-              value={newTaskName}
-              onChangeText={setNewTaskName}
-              returnKeyType="next"
-            />
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              placeholder={T.min}
-              value={newTaskDuration}
-              onChangeText={setNewTaskDuration}
-              keyboardType="numeric"
-              returnKeyType="done"
-              onSubmitEditing={addTask}
-            />
-            <TouchableOpacity style={styles.addBtn} onPress={addTask}>
-              <Text style={styles.addBtnText}>+</Text>
+          {isEditMode ? (
+            <TouchableOpacity
+              style={styles.deleteAllBtn}
+              onPress={() => {
+                setTasks([]);
+                setIsEditMode(false);
+              }}
+            >
+              <Text style={styles.deleteAllBtnText}>{T.deleteAll}</Text>
             </TouchableOpacity>
-          </View>
+          ) : (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>{T.total}</Text>
+                <Text style={styles.totalValue}>{totalMinutes} min</Text>
+              </View>
 
-          <TouchableOpacity style={styles.calcBtn} onPress={() => setStep("result")}>
-            <Text style={styles.calcBtnText}>{T.calculate}</Text>
-          </TouchableOpacity>
+              <Text style={styles.addTaskLabel}>{T.addTask}</Text>
+              <View style={styles.addRow}>
+                <TextInput
+                  style={[styles.input, { flex: 2 }]}
+                  placeholder={T.taskName}
+                  value={newTaskName}
+                  onChangeText={setNewTaskName}
+                  returnKeyType="next"
+                />
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder={T.min}
+                  value={newTaskDuration}
+                  onChangeText={setNewTaskDuration}
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                  onSubmitEditing={addTask}
+                />
+                <TouchableOpacity style={styles.addBtn} onPress={addTask}>
+                  <Text style={styles.addBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity style={styles.calcBtn} onPress={() => setStep("result")}>
+                <Text style={styles.calcBtnText}>{T.calculate}</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </ScrollView>
       </View>
     );
@@ -233,15 +316,18 @@ export default function App() {
 
   return (
     <View style={styles.outer}>
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.langBtn}
-          onPress={() => setLang(lang === "en" ? "ko" : "en")}
-        >
-          <Text style={styles.langBtnText}>
-            {lang === "en" ? "한" : "EN"} ⇄ {lang === "en" ? "EN" : "한"}
-          </Text>
-        </TouchableOpacity>
+      <View style={[styles.container, { flex: 1 }]}>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
+            style={styles.langBtn}
+            onPress={() => setLang(lang === "en" ? "ko" : "en")}
+          >
+            <Text style={styles.langBtnText}>
+              {lang === "en" ? "한" : "EN"} ⇄ {lang === "en" ? "EN" : "한"}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.title}>{T.yourSchedule}</Text>
         <Text style={[styles.subtitle, { marginBottom: 32 }]}>
@@ -287,15 +373,17 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 24,
-    paddingTop: 60,
+    paddingTop: 24,
     width: "100%",
     maxWidth: 480,
     alignSelf: "center",
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   langBtn: {
-    position: "absolute",
-    top: 16,
-    right: 0,
     backgroundColor: "#f0f0f0",
     borderRadius: 20,
     paddingHorizontal: 14,
@@ -314,7 +402,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: "#888",
-    marginBottom: 24,
+    marginBottom: 0,
   },
   timeBox: {
     backgroundColor: "#f5f5f5",
@@ -322,20 +410,39 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     paddingHorizontal: 32,
     alignItems: "center",
-    marginBottom: 36,
+    marginBottom: 32,
+    marginTop: 24,
     width: "100%",
+  },
+  tasksSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "500",
     marginBottom: 4,
   },
+  editModeBtn: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginTop: 2,
+  },
+  editModeBtnText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#333",
+  },
   taskRow: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f5f5f5",
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginBottom: 8,
   },
   dragHandle: {
@@ -363,12 +470,49 @@ const styles = StyleSheet.create({
     color: "#aaa",
     paddingLeft: 12,
   },
+  editInput: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  editRemoveBtn: {
+    backgroundColor: "#000",
+    borderRadius: 8,
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  editRemoveBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  deleteAllBtn: {
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
+    padding: 14,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  deleteAllBtnText: {
+    color: "#888",
+    fontSize: 14,
+  },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 4,
     paddingVertical: 8,
     marginBottom: 8,
+    marginTop: 4,
   },
   totalLabel: {
     fontSize: 13,
@@ -378,6 +522,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     color: "#000",
+  },
+  addTaskLabel: {
+    fontSize: 13,
+    color: "#888",
+    marginBottom: 8,
   },
   addRow: {
     flexDirection: "row",
@@ -394,13 +543,15 @@ const styles = StyleSheet.create({
   addBtn: {
     backgroundColor: "#000",
     borderRadius: 10,
-    paddingHorizontal: 16,
+    width: 48,
+    height: 48,
     justifyContent: "center",
     alignItems: "center",
   },
   addBtnText: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 24,
+    lineHeight: 28,
   },
   calcBtn: {
     backgroundColor: "#000",

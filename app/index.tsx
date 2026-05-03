@@ -1,5 +1,4 @@
 import {
-  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { useState, useEffect } from "react";
+import { router } from "expo-router";
 import {
   DndContext,
   closestCenter,
@@ -24,9 +24,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { t, Lang } from "../constants/i18n";
-
-// TODO: 개인정보처리방침 페이지 URL로 교체
-const PRIVACY_POLICY_URL = "https://ready-by.vercel.app/privacy";
 
 type Step = "home" | "result";
 
@@ -133,7 +130,7 @@ function Footer({ T }: { T: (typeof t)["en"] }) {
   return (
     <View style={styles.footer}>
       <Text style={styles.footerText}>{T.copyright}</Text>
-      <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+      <TouchableOpacity onPress={() => router.push("/privacy")}>
         <Text style={styles.footerLink}>{T.privacyPolicy}</Text>
       </TouchableOpacity>
     </View>
@@ -157,7 +154,7 @@ function ConsentBanner({
         {T.consentText2}
         <Text
           style={styles.consentTextLink}
-          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          onPress={() => router.push("/privacy")}
         >
           {T.consentLink}
         </Text>
@@ -176,7 +173,18 @@ function ConsentBanner({
 }
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("lang") as Lang) || "en";
+    }
+    return "en";
+  });
+
+  const toggleLang = () => {
+    const next = lang === "en" ? "ko" : "en";
+    setLang(next);
+    if (typeof window !== "undefined") localStorage.setItem("lang", next);
+  };
   const [step, setStep] = useState<Step>("home");
   const [arrivalMins, setArrivalMins] = useState(12 * 60);
   const [tasks, setTasks] = useState<Task[]>([
@@ -255,7 +263,7 @@ export default function App() {
             <View style={{ flex: 1 }} />
             <TouchableOpacity
               style={styles.langBtn}
-              onPress={() => setLang(lang === "en" ? "ko" : "en")}
+              onPress={toggleLang}
             >
               <Text style={styles.langBtnText}>
                 {lang === "en" ? "한" : "EN"} ⇄ {lang === "en" ? "EN" : "한"}
@@ -396,7 +404,7 @@ export default function App() {
           <View style={{ flex: 1 }} />
           <TouchableOpacity
             style={styles.langBtn}
-            onPress={() => setLang(lang === "en" ? "ko" : "en")}
+            onPress={toggleLang}
           >
             <Text style={styles.langBtnText}>
               {lang === "en" ? "한" : "EN"} ⇄ {lang === "en" ? "EN" : "한"}
@@ -655,15 +663,18 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: "center",
     paddingVertical: 32,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    marginTop: 16,
     gap: 6,
   },
   footerText: {
     fontSize: 12,
-    color: "#aaa",
+    color: "#bbb",
   },
   footerLink: {
     fontSize: 12,
-    color: "#4A90E2",
+    color: "#888",
     textDecorationLine: "underline",
   },
   consentBanner: {
@@ -671,13 +682,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#1e1b4b",
+    backgroundColor: "#111",
     padding: 24,
     paddingBottom: 32,
   },
   consentText: {
     fontSize: 14,
-    color: "#e0e0e0",
+    color: "#ccc",
     lineHeight: 22,
     marginBottom: 20,
   },
@@ -686,7 +697,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   consentTextLink: {
-    color: "#818cf8",
+    color: "#aaa",
     textDecorationLine: "underline",
   },
   consentBtnRow: {
@@ -695,26 +706,26 @@ const styles = StyleSheet.create({
   },
   consentAgreeBtn: {
     flex: 1,
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#fff",
     borderRadius: 10,
     padding: 14,
     alignItems: "center",
   },
   consentAgreeBtnText: {
-    color: "#fff",
+    color: "#000",
     fontSize: 14,
     fontWeight: "600",
   },
   consentDeclineBtn: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#6b7280",
+    borderColor: "#444",
     borderRadius: 10,
     padding: 14,
     alignItems: "center",
   },
   consentDeclineBtnText: {
-    color: "#d1d5db",
+    color: "#aaa",
     fontSize: 14,
   },
   timelineRow: {

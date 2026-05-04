@@ -1,50 +1,80 @@
-# Welcome to your Expo app 👋
+# ReadyBy ⏱️
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A reverse-countdown alarm app — enter the time you need to leave, add your morning tasks, and ReadyBy calculates exactly when you need to start each one.
 
-## Get started
+> **Status: In active development** — core screens built, freemium model planned
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## The Problem
 
-2. Start the app
+Most alarm apps tell you when to wake up. ReadyBy works backwards from when you need to *leave*.
 
-   ```bash
-   npx expo start
-   ```
+You set your departure time, add tasks with estimated durations (shower, coffee, pack bag), and the app builds a reverse timeline — showing the latest possible start time for each task so you make it out the door on time.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Tech Stack
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+| Layer | Detail |
+|---|---|
+| Framework | React Native + Expo (file-based routing) |
+| Language | TypeScript |
+| Backend / DB | Supabase (PostgreSQL) |
+| State | React hooks |
+| Environment | Expo Go / iOS Simulator |
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## Current State
+
+Three screens built and working:
+
+- **Arrival time input** — set your departure time with a time picker
+- **Task list** — add tasks with name + duration estimate, reorder, delete
+- **Result / timeline view** — reverse-calculated schedule showing start time per task
+
+DB schema designed across 5 tables: `users`, `schedules`, `tasks`, `task_templates`, `settings`
+
+---
+
+## Planned Features
+
+**Free tier**
+- Unlimited schedules
+- Manual task entry
+- Reverse timeline calculation
+- Basic alarm at first task start time
+
+**Premium (planned)**
+- Task templates (saved routines)
+- Smart suggestions based on usage patterns
+- Calendar integration
+- Widget support
+
+---
+
+## Why I Built This
+
+I wanted a project that required real mobile UI thinking — not just a web app wrapper. The reverse-countdown concept is simple enough to build solo but interesting enough to be genuinely useful. It's also a good fit for a freemium model, which I wanted hands-on experience designing from the start.
+
+The Supabase schema was designed upfront before any screens were built — a deliberate choice to practice data modelling before writing UI code.
+
+---
+
+## Running Locally
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Requires a Supabase project with the schema applied. Environment variables:
+```
+EXPO_PUBLIC_SUPABASE_URL=your_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_key
+```
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+*Part of a broader portfolio of analytics and automation work. See [data-sj.vercel.app](https://data-sj.vercel.app)*
